@@ -1,0 +1,82 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Rule set adapted from actualbudget/actual's .oxlintrc.json, minus the
+  // React, a11y and Actual-specific (i18n, typography) rules that don't apply
+  // to a Node-only pipeline.
+  "plugins": ["typescript", "import", "vitest"],
+  "env": {
+    "node": true,
+    "vitest": true
+  },
+  "ignorePatterns": ["**/dist/**", "data/**"],
+  "rules": {
+    // Typescript rules
+    "typescript/ban-ts-comment": ["error"],
+    "typescript/consistent-type-definitions": ["error", "type"],
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "separate-type-imports"
+      }
+    ],
+    "typescript/no-implied-eval": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-var-requires": "error",
+    "typescript/no-useless-default-assignment": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/unbound-method": "error",
+    "typescript/no-for-in-array": "error",
+    "typescript/restrict-template-expressions": "error",
+    // Actual still has these as warnings ("TODO: enable"); a new codebase can
+    // start strict, matching Actual's crdt package.
+    "typescript/no-misused-spread": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/no-unsafe-unary-minus": "error",
+    "typescript/no-unsafe-type-assertion": "error",
+
+    // Import rules
+    "import/consistent-type-specifier-style": "error",
+    "import/first": "error",
+    "import/no-amd": "error",
+    "import/no-default-export": "error",
+    "import/no-duplicates": ["error", { "prefer-inline": false }],
+
+    // ESLint rules
+    "eslint/array-callback-return": "error",
+    "eslint/curly": ["error", "multi-line", "consistent"],
+    "eslint/default-case": ["error", { "commentPattern": "^no default$" }],
+    "eslint/eqeqeq": ["error", "smart"],
+    "eslint/no-cond-assign": ["error", "except-parens"],
+    "eslint/no-console": "off",
+    "eslint/no-empty-function": "error",
+    "eslint/no-eval": "error",
+    "eslint/no-fallthrough": "error",
+    "eslint/no-new-func": "error",
+    "eslint/no-param-reassign": "error",
+    "eslint/no-self-compare": "error",
+    "eslint/no-sequences": "error",
+    "eslint/no-template-curly-in-string": "error",
+    "eslint/no-throw-literal": "error",
+    "eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "eslint/no-useless-concat": "error",
+    "eslint/no-useless-escape": "error",
+    "eslint/no-useless-rename": "error",
+    "eslint/no-var": "error",
+    "eslint/prefer-const": "error"
+  },
+  "overrides": [
+    {
+      // Config files must default-export.
+      "files": ["*.config.{js,ts,mjs}", "packages/*/vitest.config.ts"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    }
+  ]
+}

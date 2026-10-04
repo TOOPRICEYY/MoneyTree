@@ -1,0 +1,45 @@
+{
+  "name": "moneytree",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Aggregates and dedups itemized transactions from retailers and receipts, then syncs them into Actual Budget",
+  "license": "MIT",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "type": "module",
+  "scripts": {
+    "moneytree": "node packages/cli/src/main.ts",
+    "build": "lage build",
+    "test": "lage test --continue",
+    "test:debug": "lage test --no-cache --continue",
+    "lint": "oxfmt --check . && oxlint --type-aware --quiet",
+    "lint:fix": "oxfmt . && oxlint --fix --type-aware --quiet",
+    "typecheck": "tsc -b",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "husky": "^9.1.7",
+    "lage": "^2.17.0",
+    "nano-staged": "^1.0.2",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
+    "oxlint-tsgolint": "^7.0.2003",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  },
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
+  },
+  "engines": {
+    "node": ">=22.18.0",
+    "yarn": "^4.9.1"
+  },
+  "packageManager": "yarn@4.17.1"
+}

@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/importers" },
+    { "path": "./packages/actual-sync" },
+    { "path": "./packages/cli" }
+  ]
+}
