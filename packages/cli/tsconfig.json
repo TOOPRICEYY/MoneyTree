@@ -14,16 +14,7 @@
       "path": "../importers"
     },
     {
-      "path": "../actual-sync"
-    },
-    {
-      "path": "../email"
-    },
-    {
-      "path": "../scrapers"
-    },
-    {
-      "path": "../aggregators"
+      "path": "../pipeline"
     }
   ],
   "include": ["src", "vitest.config.ts"]

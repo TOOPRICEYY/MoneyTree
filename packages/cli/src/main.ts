@@ -1,21 +1,19 @@
-import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
+import type { SourceId } from '@moneytree/core';
+import { importers } from '@moneytree/importers';
 import {
-  applyMatches,
-  configFromEnv,
-  getUnitemizedTransactions,
-  withBudget,
-} from '@moneytree/actual-sync';
-import { dedupePurchases, matchPurchasesToBank } from '@moneytree/core';
-import type { Purchase, RawDocument, SourceId } from '@moneytree/core';
-import { importers, parseDocument } from '@moneytree/importers';
-import { scrapers } from '@moneytree/scrapers';
-
-import { authGmail, CHANNELS, fetchSource } from './fetch.ts';
-import type { Via } from './fetch.ts';
-import { INVOKED_FROM, loadEnv, ROOT } from './paths.ts';
-import { loadRawDocuments } from './store.ts';
+  applySelectedMatches,
+  authGmail,
+  FETCH_CHANNELS,
+  fetchSource,
+  INVOKED_FROM,
+  isFetchChannel,
+  listSources,
+  loadEnv,
+  loadPurchases,
+  previewMatches,
+} from '@moneytree/pipeline';
 
 const USAGE = `Usage:
   moneytree sources                       List sources and how each can be fetched
@@ -24,38 +22,22 @@ const USAGE = `Usage:
       Download raw receipts into data/raw/<source>/
   moneytree parse <source> [file...]      Print purchases as JSON (default: data/raw)
   moneytree sync <source> [file...] [--apply] [--since YYYY-MM-DD]
-      Match purchases to bank charges in Actual. Dry run unless --apply.`;
+      Match purchases to bank charges in Actual. Dry run unless --apply.
+
+Run \`yarn ui\` for the web interface.`;
+
+const log = (message: string) => console.log(message);
 
 function isSourceId(value: string): value is SourceId {
   return Object.hasOwn(importers, value);
-}
-
-function isVia(value: string): value is Via {
-  return CHANNELS.some(channel => channel === value);
 }
 
 function daysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 }
 
-/** Explicit files win; otherwise everything fetched into data/raw. */
-async function loadPurchases(
-  source: SourceId,
-  files: string[],
-): Promise<Purchase[]> {
-  const docs: RawDocument[] =
-    files.length > 0
-      ? files.map(file => ({
-          source,
-          channel: 'file',
-          kind: 'file',
-          id: file,
-          fetchedAt: new Date().toISOString(),
-          path: resolve(INVOKED_FROM, file),
-        }))
-      : await loadRawDocuments(source);
-  const results = await Promise.all(docs.map(parseDocument));
-  return dedupePurchases(results.flat());
+function formatCents(cents: number): string {
+  return (cents / 100).toFixed(2);
 }
 
 async function main(argv: string[]) {
@@ -72,18 +54,13 @@ async function main(argv: string[]) {
   loadEnv();
 
   if (command === 'sources') {
-    for (const importer of Object.values(importers)) {
-      const scraper = scrapers[importer.source];
-      const planned = (isPlanned: boolean | undefined) =>
-        isPlanned ? ' (planned)' : '';
-      const channels = [
-        importer.emailQuery && `email${planned(importer.isPlanned)}`,
-        scraper && `scrape${planned(scraper.isPlanned || importer.isPlanned)}`,
-        ['amazon', 'costco'].includes(importer.source) && 'knot',
-        `file${planned(importer.isPlanned)}`,
-      ].filter(Boolean);
+    for (const info of await listSources()) {
+      const channels = info.channels.map(c =>
+        c.canParse ? c.channel : `${c.channel} (parser planned)`,
+      );
       console.log(
-        `${importer.source.padEnd(8)} ${importer.description}\n         via: ${channels.join(', ')}`,
+        `${info.source.padEnd(8)} ${info.description}\n` +
+          `         via: ${channels.join(', ')}; ${info.rawDocumentCount} fetched`,
       );
     }
     return;
@@ -91,7 +68,7 @@ async function main(argv: string[]) {
 
   if (command === 'auth') {
     if (arg !== 'gmail') throw new Error('Only `auth gmail` is supported.');
-    await authGmail();
+    await authGmail(log);
     return;
   }
 
@@ -103,49 +80,38 @@ async function main(argv: string[]) {
     throw new Error(`Unknown source "${arg}". Run: moneytree sources`);
   }
 
+  const options = { since: values.since, files, baseDir: INVOKED_FROM };
   switch (command) {
     case 'fetch': {
       const via = values.via ?? '';
-      if (!isVia(via)) {
-        throw new Error(`--via must be one of: ${CHANNELS.join(', ')}`);
+      if (!isFetchChannel(via)) {
+        throw new Error(`--via must be one of: ${FETCH_CHANNELS.join(', ')}`);
       }
-      const count = await fetchSource(arg, via, values.since ?? daysAgo(365));
-      console.log(`Saved ${count} ${arg} documents to data/raw/${arg}/.`);
+      await fetchSource(arg, via, values.since ?? daysAgo(365), log);
       return;
     }
     case 'parse':
-      console.log(JSON.stringify(await loadPurchases(arg, files), null, 2));
+      console.log(
+        JSON.stringify(await loadPurchases(arg, files, INVOKED_FROM), null, 2),
+      );
       return;
     case 'sync': {
-      const purchases = await loadPurchases(arg, files);
-      const dates = purchases.map(p => p.date).sort();
-      const since = values.since ?? dates[0] ?? '1970-01-01';
-      const until = new Date().toISOString().slice(0, 10);
-      process.env.ACTUAL_DATA_DIR = resolve(
-        ROOT,
-        process.env.ACTUAL_DATA_DIR ?? 'data/actual-cache',
-      );
-
-      await withBudget(configFromEnv(), async () => {
-        const bank = await getUnitemizedTransactions(since, until);
-        const matches = matchPurchasesToBank(purchases, bank);
-        for (const m of matches) {
-          console.log(
-            `${m.bankTransaction.date} ${(m.bankTransaction.amount / 100).toFixed(2)} ` +
-              `${m.bankTransaction.payee} <- ${m.purchase.merchant} ` +
-              `(${m.purchase.items.length} items, score ${m.score.toFixed(2)})`,
-          );
-        }
+      const review = await previewMatches(arg, options);
+      for (const m of review.matches) {
         console.log(
-          `${matches.length} of ${purchases.length} purchases matched.`,
+          `${m.bankTransaction.date} ${formatCents(m.bankTransaction.amount)} ` +
+            `${m.bankTransaction.payee} <- ${m.purchase.merchant} ` +
+            `(${m.purchase.items.length} items, score ${m.score.toFixed(2)})`,
         );
-        if (values.apply) {
-          await applyMatches(matches);
-          console.log('Splits written to Actual.');
-        } else {
-          console.log('Dry run. Re-run with --apply to write splits.');
-        }
-      });
+      }
+      const total = review.matches.length + review.unmatched.length;
+      console.log(`${review.matches.length} of ${total} purchases matched.`);
+      if (values.apply) {
+        const written = await applySelectedMatches(arg, 'all', options);
+        console.log(`Splits written to Actual for ${written} transactions.`);
+      } else {
+        console.log('Dry run. Re-run with --apply to write splits.');
+      }
       return;
     }
     default:

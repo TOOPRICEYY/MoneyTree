@@ -1,9 +1,17 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { syncKnotTransactions } from '@moneytree/aggregators';
+import {
+  KNOT_MERCHANT_IDS,
+  syncKnotTransactions,
+} from '@moneytree/aggregators';
 import type { KnotConfig } from '@moneytree/aggregators';
-import type { IsoDate, RawDocument, SourceId } from '@moneytree/core';
+import type {
+  FetchChannel,
+  IsoDate,
+  RawDocument,
+  SourceId,
+} from '@moneytree/core';
 import {
   authorizeGmail,
   fetchEmails,
@@ -17,8 +25,33 @@ import { scrapers } from '@moneytree/scrapers';
 import { BROWSER_PROFILE_DIR, CREDENTIALS_DIR } from './paths.ts';
 import { readState, saveRawDocument, writeState } from './store.ts';
 
-export const CHANNELS = ['email', 'scrape', 'knot'] as const;
-export type Via = (typeof CHANNELS)[number];
+export const FETCH_CHANNELS: readonly FetchChannel[] = [
+  'email',
+  'scrape',
+  'knot',
+];
+
+export type Log = (message: string) => void;
+
+export function isFetchChannel(value: string): value is FetchChannel {
+  return FETCH_CHANNELS.some(channel => channel === value);
+}
+
+/** Whether `channel` can download data for `source` today. */
+export function canFetch(source: SourceId, channel: FetchChannel): boolean {
+  switch (channel) {
+    case 'email':
+      return importers[source].emailQuery !== undefined;
+    case 'scrape': {
+      const scraper = scrapers[source];
+      return scraper !== undefined && !scraper.isPlanned;
+    }
+    case 'knot':
+      return KNOT_MERCHANT_IDS[source] !== undefined;
+    default:
+      return false;
+  }
+}
 
 function required(name: string): string {
   const value = process.env[name];
@@ -28,19 +61,20 @@ function required(name: string): string {
 
 const GMAIL_TOKEN_FILE = join(CREDENTIALS_DIR, 'gmail.json');
 
-export async function authGmail(): Promise<void> {
+export async function authGmail(log: Log): Promise<void> {
   const client = {
     clientId: required('GMAIL_CLIENT_ID'),
     clientSecret: required('GMAIL_CLIENT_SECRET'),
   };
   const refreshToken = await authorizeGmail(client, url => {
-    console.log(`Open this URL to let MoneyTree read your Gmail:\n\n${url}\n`);
+    log('Open this URL to let MoneyTree read your Gmail:');
+    log(url);
   });
   await mkdir(CREDENTIALS_DIR, { recursive: true });
   await writeFile(GMAIL_TOKEN_FILE, JSON.stringify({ refreshToken }), {
     mode: 0o600,
   });
-  console.log(`Saved Gmail access to ${GMAIL_TOKEN_FILE}`);
+  log(`Saved Gmail access to ${GMAIL_TOKEN_FILE}`);
 }
 
 async function emailProviderFromEnv(): Promise<EmailProvider> {
@@ -56,7 +90,7 @@ async function emailProviderFromEnv(): Promise<EmailProvider> {
   }
   const saved = await readFile(GMAIL_TOKEN_FILE, 'utf8').catch(() => {
     throw new Error(
-      'Gmail is not authorized yet. Run: yarn moneytree auth gmail',
+      'Gmail is not authorized yet. Use Connect Gmail, or run: yarn moneytree auth gmail',
     );
   });
   // Written by authGmail above.
@@ -81,13 +115,18 @@ function knotConfigFromEnv(): KnotConfig {
 
 async function* documentsFor(
   source: SourceId,
-  via: Via,
+  via: FetchChannel,
   since: IsoDate,
+  log: Log,
 ): AsyncGenerator<RawDocument> {
+  if (!canFetch(source, via)) {
+    throw new Error(`${source} can't be fetched via ${via} yet`);
+  }
   switch (via) {
     case 'email': {
       const { emailQuery } = importers[source];
-      if (!emailQuery) throw new Error(`${source} has no email query`);
+      if (!emailQuery) return;
+      log(`Searching email for ${source} receipts since ${since}`);
       yield* fetchEmails(
         await emailProviderFromEnv(),
         source,
@@ -98,17 +137,16 @@ async function* documentsFor(
     }
     case 'scrape': {
       const scraper = scrapers[source];
-      if (!scraper) throw new Error(`${source} has no scraper`);
-      yield* scraper.scrape({
-        since,
-        profileDir: BROWSER_PROFILE_DIR,
-        log: message => console.log(message),
-      });
+      if (!scraper) return;
+      yield* scraper.scrape({ since, profileDir: BROWSER_PROFILE_DIR, log });
       return;
     }
     case 'knot': {
       const stateKey = `knot-${source}`;
       const state = await readState<{ cursor?: string }>(stateKey);
+      log(
+        state?.cursor ? 'Syncing new Knot orders' : 'Syncing all Knot orders',
+      );
       const result = await syncKnotTransactions(
         knotConfigFromEnv(),
         source,
@@ -126,13 +164,16 @@ async function* documentsFor(
 /** Fetches raw documents for one source over one channel and saves them. */
 export async function fetchSource(
   source: SourceId,
-  via: Via,
+  via: FetchChannel,
   since: IsoDate,
+  log: Log = () => undefined,
 ): Promise<number> {
   let count = 0;
-  for await (const doc of documentsFor(source, via, since)) {
+  for await (const doc of documentsFor(source, via, since, log)) {
     await saveRawDocument(doc);
     count++;
+    if (count % 25 === 0) log(`Saved ${count} documents so far`);
   }
+  log(`Saved ${count} ${source} documents to data/raw/${source}/.`);
   return count;
 }
