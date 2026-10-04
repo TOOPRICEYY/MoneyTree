@@ -1,6 +1,6 @@
 /* Standalone app shell: page chrome around the MoneyTree views. */
 
-:root {
+html.mt-standalone {
   --shell-bg: #f5f6f3;
   --shell-sidebar: #12261d;
   --shell-sidebar-text: #d7e6dd;
@@ -18,7 +18,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  html.mt-standalone {
     --shell-bg: #0f1311;
     --shell-sidebar: #0b1410;
     --shell-sidebar-active: #17291f;
@@ -31,7 +31,7 @@
   box-sizing: border-box;
 }
 
-body {
+html.mt-standalone body {
   margin: 0;
   background: var(--shell-bg);
 }

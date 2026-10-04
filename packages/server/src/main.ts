@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { serve } from '@hono/node-server';
 import {
@@ -12,49 +12,36 @@ import {
   previewMatches,
   ROOT,
 } from '@moneytree/pipeline';
-import { Hono } from 'hono';
 
 import { createApp } from './app.ts';
-
-const PORT = Number(process.env.MONEYTREE_PORT ?? 5007);
-const WEB_DIST = join(ROOT, 'packages/web/dist');
-const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-};
+import { allowedOriginsFromEnv, createServerApp } from './web.ts';
 
 loadEnv();
 
-const api = createApp({
-  listSources,
-  loadPurchases: source => loadPurchases(source),
-  previewMatches,
-  applySelectedMatches,
-  fetchSource,
-  authGmail,
-});
+const PORT = Number(process.env.MONEYTREE_PORT ?? 5007);
+const pkg: unknown = JSON.parse(
+  readFileSync(join(ROOT, 'package.json'), 'utf8'),
+);
+const version =
+  typeof pkg === 'object' &&
+  pkg &&
+  'version' in pkg &&
+  typeof pkg.version === 'string'
+    ? pkg.version
+    : '0.0.0';
 
-const app = new Hono();
-app.route('/', api);
-
-// Serve the built UI; unknown paths fall back to index.html.
-app.get('*', async c => {
-  const path = normalize(c.req.path).replace(/^(\.\.[/\\])+/, '');
-  for (const file of [join(WEB_DIST, path), join(WEB_DIST, 'index.html')]) {
-    try {
-      const body = await readFile(file);
-      return c.body(body, 200, {
-        'Content-Type': MIME[extname(file)] ?? 'application/octet-stream',
-      });
-    } catch {
-      // try the next candidate
-    }
-  }
-  return c.text('UI not built. Run: yarn ui', 404);
+const app = createServerApp({
+  api: createApp({
+    listSources,
+    loadPurchases: source => loadPurchases(source),
+    previewMatches,
+    applySelectedMatches,
+    fetchSource,
+    authGmail,
+  }),
+  distDir: join(ROOT, 'packages/web/dist'),
+  allowedOrigins: allowedOriginsFromEnv(),
+  version,
 });
 
 // Local only: this server can read your mail and write to your budget.

@@ -9,6 +9,8 @@ import type { LinkTo } from './routes.ts';
 type MoneyTreeContextValue = {
   client: MoneyTreeClient;
   linkTo: LinkTo;
+  /** Called after splits are written, so a host like Actual can resync. */
+  onBudgetChanged?: () => void;
 };
 
 const MoneyTreeContext = createContext<MoneyTreeContextValue | undefined>(
@@ -18,6 +20,7 @@ const MoneyTreeContext = createContext<MoneyTreeContextValue | undefined>(
 type MoneyTreeProviderProps = {
   client: MoneyTreeClient;
   linkTo: LinkTo;
+  onBudgetChanged?: () => void;
   children: ReactNode;
 };
 
@@ -29,6 +32,7 @@ type MoneyTreeProviderProps = {
 export function MoneyTreeProvider({
   client,
   linkTo,
+  onBudgetChanged,
   children,
 }: MoneyTreeProviderProps) {
   const [queryClient] = useState(
@@ -41,7 +45,7 @@ export function MoneyTreeProvider({
   );
 
   return (
-    <MoneyTreeContext value={{ client, linkTo }}>
+    <MoneyTreeContext value={{ client, linkTo, onBudgetChanged }}>
       <QueryClientProvider client={queryClient}>
         <div className="mt-root">{children}</div>
       </QueryClientProvider>

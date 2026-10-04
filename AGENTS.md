@@ -190,24 +190,21 @@ The standalone shell: sidebar, hash routing (`route.ts` is its `linkTo`),
 page chrome (`shell.css`), and `createHttpClient('/api')`. Built by Vite and
 served by the server under `yarn ui`.
 
-### Embedding in Actual (planned)
+### Embedding in Actual
 
-Actual's client-side plugins are still behind the `flags.plugins`
-experimental flag ("soon"). Its plugin service worker serves plugin files as
-ES modules from `/plugin-data/<slug>/`. When the plugin API is public:
+MoneyTree stays a separately hosted service; Actual (branch
+`moneytree-extension` in `../actual`) frames it. Contract:
 
-1. Add `packages/actual-extension` that builds `@moneytree/ui` in Vite
-   library mode with `react`/`react-dom` external (Actual provides React).
-2. Mount the views inside Actual's pages and pass a `linkTo` that maps
-   `MoneyTreeRoute`s to Actual's router paths.
-3. Supply a `MoneyTreeClient` that does `review`/`apply` through Actual's
-   in-app API (no `@actual-app/api` sync round trip) and sends
-   `sources`/`purchases`/`fetch`/`jobs` to the local MoneyTree server, since
-   email and scraping need Node.
-4. Use `<ActivityPanel placement="inline" />` in Actual's layout.
-
-Nothing in `packages/ui` should need to change for this; if a change there is
-needed, it is a sign a host concern leaked into the views.
+- `GET /health` returns `{ ok, version }`; Actual checks it before showing the frame
+- `/embed/*` serves the same bundle as `EmbedApp` (`packages/web/src/EmbedApp.tsx`):
+  no sidebar, paths `/embed/sources`, `/embed/purchases/:source`, `/embed/review/:source`
+- Allowed host origins: `MONEYTREE_ALLOWED_ORIGINS` (default `http://localhost:5006,http://localhost:3001`).
+  They get CORS on `/api` and `/health`, and are the only `frame-ancestors` for `/embed`
+- `/embed` sends `Cross-Origin-Embedder-Policy: require-corp` and assets send
+  `Cross-Origin-Resource-Policy: cross-origin`, because Actual's page is cross-origin isolated
+- postMessage (`packages/web/src/bridge.ts`), all `{ source: 'moneytree' | 'actual', type, ... }`,
+  origin-checked: child sends `ready`, `navigate { path }`, `budget-changed`;
+  host sends `init`/`theme { vars }` (Actual's `--color-*`, applied on `:root`) and `navigate { path }`
 
 ### Adding an importer
 

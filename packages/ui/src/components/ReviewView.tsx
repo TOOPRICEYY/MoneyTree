@@ -24,7 +24,7 @@ export function ReviewView({ source }: ReviewViewProps) {
 }
 
 function Review({ source }: ReviewViewProps) {
-  const { client } = useMoneyTree();
+  const { client, onBudgetChanged } = useMoneyTree();
   const [since, setSince] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isConfirming, setIsConfirming] = useState(false);
@@ -48,6 +48,7 @@ function Review({ source }: ReviewViewProps) {
     onSuccess: result => {
       setWritten(result.written);
       setIsConfirming(false);
+      if (result.written > 0) onBudgetChanged?.();
       review.mutate();
     },
   });
