@@ -173,6 +173,9 @@ providers from `.env` and saves documents via `store.ts`.
   (closest design for cross-source matching and dedup: 5-day window, learns
   from confirmations). Also maintained: amazon-orders, azad, Receipt
   Wrangler, actual-ai.
+  Full notes: [docs/research/similar-projects.md](docs/research/similar-projects.md).
+- **Prefer email over scraping.** Scrapers break and hit CAPTCHAs; use a
+  source's emails as the primary channel and scraping as the fallback.
 
 ## Code Style & Conventions
 
