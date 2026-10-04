@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../importers"
+    },
+    {
+      "path": "../actual-sync"
+    },
+    {
+      "path": "../email"
+    },
+    {
+      "path": "../scrapers"
+    },
+    {
+      "path": "../aggregators"
+    }
+  ],
+  "include": ["src", "vitest.config.ts"]
+}

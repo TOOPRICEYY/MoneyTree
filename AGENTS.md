@@ -32,12 +32,19 @@ yarn lint:fix
 # Run all tests
 yarn test
 
+# Web UI on http://127.0.0.1:5007 (builds the UI, then serves it with the API)
+yarn ui
+
+# UI development: API server + Vite dev server with HMR on :5173
+yarn start
+
 # CLI
 yarn moneytree sources                              # sources and their channels
 yarn moneytree auth gmail                           # one-time Gmail OAuth
 yarn moneytree fetch costco --via scrape            # raw docs into data/raw/
 yarn moneytree fetch apple --via email --since 2026-01-01
 yarn moneytree fetch amazon --via knot
+yarn moneytree import costco data/costco_receipts.json  # register a local file
 yarn moneytree parse costco                         # parse everything in data/raw/costco
 yarn moneytree parse costco path/to/costco_receipts.json
 yarn moneytree sync costco                          # dry run
@@ -70,6 +77,9 @@ Data flows one way:
 fetchers (email | scrapers | aggregators | files)
    → RawDocument, saved to data/raw/<source>/<channel>/
    → importers (parse)  → core (dedup, match, split)  → actual-sync
+
+pipeline (orchestration) ← cli
+                         ← server (local HTTP API) ← web (React UI)
 ```
 
 Fetchers only acquire data and importers only parse it, joined by the
@@ -129,10 +139,37 @@ The only package that talks to Actual, through `@actual-app/api`.
 - `toActual.ts` - pure mapping from a `PurchaseMatch` to an `updateTransaction` payload (unit tested)
 - `client.ts` - `withBudget()`, `getUnitemizedTransactions()`, `applyMatches()`
 
-#### 7. **cli** (`packages/cli/` - `@moneytree/cli`)
+#### 7. **pipeline** (`packages/pipeline/` - `@moneytree/pipeline`)
 
-`src/main.ts`, run with `yarn moneytree <command>`. `fetch.ts` builds
-providers from `.env` and saves documents via `store.ts`.
+Orchestration shared by the CLI and the server: builds providers from
+`.env` (`fetch.ts`), stores raw documents and state (`store.ts`), lists
+sources and channel status (`sources.ts`), parses purchases
+(`purchases.ts`), and previews/applies matches (`review.ts`). All
+`@actual-app/api` use goes through one queue, because the API holds a single
+open budget per process.
+
+#### 8. **cli** (`packages/cli/` - `@moneytree/cli`)
+
+`src/main.ts`, run with `yarn moneytree <command>`. Thin wrapper over pipeline.
+
+#### 9. **server** (`packages/server/` - `@moneytree/server`)
+
+Local HTTP API for the UI (Hono on `127.0.0.1:5007`, never exposed beyond
+localhost because it can read mail and write the budget). `createApp(pipeline)`
+takes the pipeline as an argument so routes are tested with fakes
+(`app.test.ts`). Fetches run as in-memory jobs (`jobs.ts`) that the UI polls.
+In production it also serves `packages/web/dist`.
+
+#### 10. **web** (`packages/web/` - `@moneytree/web`)
+
+React 19 + Vite UI, compiled with React Compiler exactly as Actual's
+desktop-client does (`vite.config.ts`). TanStack Query for server state, hash
+routing (`route.ts`), plain CSS with light/dark tokens (`styles.css`).
+
+- Sources: per-source channel status, fetch buttons, Connect Gmail, activity panel with live job logs
+- Purchases: parsed purchases per source with line items and adjustments
+- Review: dry-run matches against Actual, select which to write, confirm, apply
+- API types come from `@moneytree/core`'s `api.ts`; the web package never imports Node packages
 
 ### Adding an importer
 
@@ -192,6 +229,14 @@ providers from `.env` and saves documents via `store.ts`.
 **Naming:**
 
 - Use descriptive variable names with auxiliary verbs (e.g., `isLoaded`, `hasError`)
+
+**React (web package), following Actual:**
+
+- React Compiler auto-memoizes, so skip manual `useCallback`/`useMemo`/`memo`
+- Functional components with named exports and typed props, one component per file
+- Import from `react` by name (no `React.*` default import)
+- Wrap standalone financial numbers in `Money` (tabular figures), Actual's `FinancialText` equivalent
+- Actions that write to Actual need an explicit confirm step
 
 **Code Structure:**
 

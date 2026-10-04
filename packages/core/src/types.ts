@@ -133,3 +133,16 @@ export type RawDocument = RawDocumentBase &
         path: string;
       }
   );
+
+export const SOURCE_IDS = [
+  'amazon',
+  'apple',
+  'costco',
+  'ebay',
+  'meijer',
+  'receipt',
+] as const satisfies readonly SourceId[];
+
+export function isSourceId(value: string): value is SourceId {
+  return SOURCE_IDS.some(id => id === value);
+}

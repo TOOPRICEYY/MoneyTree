@@ -20,7 +20,16 @@
       "path": "./packages/actual-sync"
     },
     {
+      "path": "./packages/pipeline"
+    },
+    {
+      "path": "./packages/server"
+    },
+    {
       "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/web"
     }
   ]
 }

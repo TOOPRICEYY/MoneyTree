@@ -12,6 +12,10 @@
   "type": "module",
   "scripts": {
     "moneytree": "node packages/cli/src/main.ts",
+    "ui": "yarn workspace @moneytree/web build && node packages/server/src/main.ts",
+    "start": "npm-run-all --parallel 'start:server' 'start:web'",
+    "start:server": "yarn workspace @moneytree/server start",
+    "start:web": "yarn workspace @moneytree/web start",
     "build": "lage build",
     "test": "lage test --continue",
     "test:debug": "lage test --no-cache --continue",
@@ -25,6 +29,7 @@
     "husky": "^9.1.7",
     "lage": "^2.17.0",
     "nano-staged": "^1.0.2",
+    "npm-run-all": "^4.1.5",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "oxlint-tsgolint": "^7.0.2003",

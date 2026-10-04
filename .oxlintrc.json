@@ -3,7 +3,7 @@
   // Rule set adapted from actualbudget/actual's .oxlintrc.json, minus the
   // React, a11y and Actual-specific (i18n, typography) rules that don't apply
   // to a Node-only pipeline.
-  "plugins": ["typescript", "import", "vitest"],
+  "plugins": ["typescript", "import", "vitest", "react", "jsx-a11y"],
   "env": {
     "node": true,
     "vitest": true
@@ -44,6 +44,30 @@
     "import/no-default-export": "error",
     "import/no-duplicates": ["error", { "prefer-inline": false }],
 
+    // React rules (from Actual's .oxlintrc.json)
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/jsx-boolean-value": "error",
+    "react/jsx-curly-brace-presence": "error",
+    "react/jsx-key": "error",
+    "react/jsx-no-comment-textnodes": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/jsx-no-useless-fragment": "error",
+    "react/jsx-pascal-case": ["error", { "allowAllCaps": true }],
+    "react/no-danger-with-children": "error",
+    "react/self-closing-comp": "error",
+
+    // JSX A11y rules
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-proptypes": "error",
+    "jsx-a11y/aria-role": ["error", { "ignoreNonDOM": true }],
+    "jsx-a11y/no-autofocus": ["error", { "ignoreNonDOM": true }],
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/role-supports-aria-props": "error",
+
     // ESLint rules
     "eslint/array-callback-return": "error",
     "eslint/curly": ["error", "multi-line", "consistent"],
@@ -73,7 +97,11 @@
   "overrides": [
     {
       // Config files must default-export.
-      "files": ["*.config.{js,ts,mjs}", "packages/*/vitest.config.ts"],
+      "files": [
+        "*.config.{js,ts,mjs}",
+        "packages/*/vitest.config.ts",
+        "packages/*/vite.config.ts"
+      ],
       "rules": {
         "import/no-default-export": "off"
       }

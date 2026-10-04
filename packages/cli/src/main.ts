@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { SourceId } from '@moneytree/core';
@@ -7,6 +8,7 @@ import {
   authGmail,
   FETCH_CHANNELS,
   fetchSource,
+  importFiles,
   INVOKED_FROM,
   isFetchChannel,
   listSources,
@@ -20,6 +22,7 @@ const USAGE = `Usage:
   moneytree auth gmail                    Authorize read-only Gmail access
   moneytree fetch <source> --via <email|scrape|knot> [--since YYYY-MM-DD]
       Download raw receipts into data/raw/<source>/
+  moneytree import <source> <file>...     Add local files (exports, saved JSON) to data/raw
   moneytree parse <source> [file...]      Print purchases as JSON (default: data/raw)
   moneytree sync <source> [file...] [--apply] [--since YYYY-MM-DD]
       Match purchases to bank charges in Actual. Dry run unless --apply.
@@ -72,7 +75,7 @@ async function main(argv: string[]) {
     return;
   }
 
-  if (!command || !['fetch', 'parse', 'sync'].includes(command)) {
+  if (!command || !['fetch', 'import', 'parse', 'sync'].includes(command)) {
     console.log(USAGE);
     return;
   }
@@ -88,6 +91,13 @@ async function main(argv: string[]) {
         throw new Error(`--via must be one of: ${FETCH_CHANNELS.join(', ')}`);
       }
       await fetchSource(arg, via, values.since ?? daysAgo(365), log);
+      return;
+    }
+    case 'import': {
+      const paths = files.map(file => resolve(INVOKED_FROM, file));
+      console.log(
+        `Added ${await importFiles(arg, paths)} files to data/raw/${arg}/.`,
+      );
       return;
     }
     case 'parse':

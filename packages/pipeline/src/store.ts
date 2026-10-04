@@ -1,5 +1,5 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import type { RawDocument, SourceId } from '@moneytree/core';
 
@@ -40,6 +40,24 @@ export async function loadRawDocuments(
       .map(file => readJson<RawDocument>(join(root, file))),
   );
   return docs;
+}
+
+/** Registers local files (exports, saved JSON, photos) as raw documents. */
+export async function importFiles(
+  source: SourceId,
+  paths: string[],
+): Promise<number> {
+  for (const path of paths) {
+    await saveRawDocument({
+      source,
+      channel: 'file',
+      kind: 'file',
+      id: basename(path),
+      fetchedAt: new Date().toISOString(),
+      path,
+    });
+  }
+  return paths.length;
 }
 
 /** Small JSON state between runs, e.g. aggregator cursors. */
