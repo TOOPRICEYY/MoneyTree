@@ -79,3 +79,57 @@ export type PurchaseMatch = {
   dayDelta: number;
   amountDelta: Cents;
 };
+
+/** How a raw document was acquired. */
+export type Channel = 'email' | 'scraper' | 'aggregator' | 'file';
+
+/** Finds a source's receipt emails. Shared by every email provider. */
+export type EmailQuery = {
+  /** Sender addresses or domains. */
+  from: string[];
+  /** Words that must all appear in the subject. */
+  subject?: string[];
+};
+
+export type Attachment = {
+  filename: string;
+  mimeType: string;
+  /** Base64, so raw documents stay JSON-serializable. */
+  contentBase64: string;
+};
+
+type RawDocumentBase = {
+  source: SourceId;
+  channel: Channel;
+  /** Stable within a source: message id, receipt barcode, order id. */
+  id: string;
+  fetchedAt: string;
+};
+
+/**
+ * Unparsed data as a fetcher (email, scraper, aggregator) acquired it.
+ * Fetchers only produce these and importers only consume them, so any
+ * channel can feed any parser, and raw data can be re-parsed offline.
+ */
+export type RawDocument = RawDocumentBase &
+  (
+    | {
+        kind: 'email';
+        receivedAt: string;
+        from: string;
+        subject: string;
+        html?: string;
+        text?: string;
+        attachments: Attachment[];
+      }
+    | {
+        kind: 'json';
+        /** Names the payload shape, e.g. `costco-receipt` or `knot`. */
+        format: string;
+        data: unknown;
+      }
+    | {
+        kind: 'file';
+        path: string;
+      }
+  );

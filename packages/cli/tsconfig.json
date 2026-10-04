@@ -7,9 +7,24 @@
     "emitDeclarationOnly": true
   },
   "references": [
-    { "path": "../core" },
-    { "path": "../importers" },
-    { "path": "../actual-sync" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../importers"
+    },
+    {
+      "path": "../actual-sync"
+    },
+    {
+      "path": "../email"
+    },
+    {
+      "path": "../scrapers"
+    },
+    {
+      "path": "../aggregators"
+    }
   ],
   "include": ["src", "vitest.config.ts"]
 }

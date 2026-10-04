@@ -5,7 +5,7 @@ import type { LineItem, Purchase } from '@moneytree/core';
 
 import type { Importer } from '../types.ts';
 
-type CostcoItem = {
+export type CostcoItem = {
   item_number: string;
   description: string;
   amount: number;
@@ -13,7 +13,7 @@ type CostcoItem = {
   unit: number;
 };
 
-type CostcoReceipt = {
+export type CostcoReceipt = {
   barcode: string;
   date: string;
   warehouse: string;
@@ -81,17 +81,34 @@ export function parseCostcoReceipts(receipts: CostcoReceipt[]): Purchase[] {
   }));
 }
 
+function asReceipts(data: unknown, origin: string): CostcoReceipt[] {
+  const receipts = Array.isArray(data) ? data : [data];
+  if (!receipts.every(r => typeof r === 'object' && r && 'barcode' in r)) {
+    throw new Error(`${origin} does not contain Costco receipts`);
+  }
+  // Shape beyond `barcode` is covered by the fixture tests, not at runtime.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return receipts as CostcoReceipt[];
+}
+
 export const costcoImporter: Importer = {
   source: 'costco',
   description:
-    'Receipt JSON from the costco.com receipts endpoint (see Accountable extraction tools)',
-  parseFile: async path => {
-    const json: unknown = JSON.parse(await readFile(path, 'utf8'));
-    if (!Array.isArray(json)) {
-      throw new Error(`${path} is not a Costco receipts array`);
+    'Warehouse and gas receipts from the costco.com receipts API (scraper or saved JSON)',
+  parse: async doc => {
+    switch (doc.kind) {
+      case 'file': {
+        const json: unknown = JSON.parse(await readFile(doc.path, 'utf8'));
+        return parseCostcoReceipts(asReceipts(json, doc.path));
+      }
+      case 'json':
+        return parseCostcoReceipts(asReceipts(doc.data, doc.id));
+      case 'email':
+        // Costco's emails are marketing and online orders, not warehouse
+        // receipts, so the scraper is the only source of itemized data.
+        return [];
+      default:
+        throw new Error('Unknown document kind');
     }
-    // The endpoint's shape is validated by the fixture tests, not at runtime.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-    return parseCostcoReceipts(json as CostcoReceipt[]);
   },
 };

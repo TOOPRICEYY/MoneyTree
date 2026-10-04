@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@moneytree/actual-sync": "workspace:*",
+    "@moneytree/aggregators": "workspace:*",
     "@moneytree/core": "workspace:*",
-    "@moneytree/importers": "workspace:*"
+    "@moneytree/email": "workspace:*",
+    "@moneytree/importers": "workspace:*",
+    "@moneytree/scrapers": "workspace:*"
   },
   "devDependencies": {
     "vite": "^8.3.2",

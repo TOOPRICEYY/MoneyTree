@@ -1,4 +1,4 @@
-import type { SourceId } from '@moneytree/core';
+import type { EmailQuery, SourceId } from '@moneytree/core';
 
 import type { Importer } from './types.ts';
 
@@ -6,11 +6,18 @@ import type { Importer } from './types.ts';
 export function notImplemented(
   source: SourceId,
   description: string,
+  emailQuery?: EmailQuery,
 ): Importer {
   return {
     source,
     description,
-    parseFile: () =>
-      Promise.reject(new Error(`The ${source} importer is not built yet.`)),
+    emailQuery,
+    isPlanned: true,
+    parse: doc =>
+      Promise.reject(
+        new Error(
+          `The ${source} parser for ${doc.kind} documents is not built yet.`,
+        ),
+      ),
   };
 }

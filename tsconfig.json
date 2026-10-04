@@ -1,9 +1,26 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/importers" },
-    { "path": "./packages/actual-sync" },
-    { "path": "./packages/cli" }
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/importers"
+    },
+    {
+      "path": "./packages/email"
+    },
+    {
+      "path": "./packages/scrapers"
+    },
+    {
+      "path": "./packages/aggregators"
+    },
+    {
+      "path": "./packages/actual-sync"
+    },
+    {
+      "path": "./packages/cli"
+    }
   ]
 }

@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../importers"
+    }
+  ],
+  "include": ["src", "vitest.config.ts"]
+}

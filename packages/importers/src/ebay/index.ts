@@ -1,9 +1,11 @@
 import { notImplemented } from '../notImplemented.ts';
 
-// Plan: parse eBay order confirmation emails or the purchase history CSV.
-// eBay charges usually arrive through PayPal or a card with an "EBAY O*"
-// descriptor that carries part of the order number.
+// Plan: parse eBay "Order confirmed" emails (item, price, shipping, tax).
+// Seller messages come from members.ebay.com addresses and are skipped by
+// the sender filter. eBay charges arrive with an "EBAY O*" descriptor that
+// carries part of the order number, which can tighten bank matching.
 export const ebayImporter = notImplemented(
   'ebay',
-  'eBay order emails or purchase history export',
+  'eBay order confirmation emails',
+  { from: ['ebay@ebay.com'], subject: ['order'] },
 );
