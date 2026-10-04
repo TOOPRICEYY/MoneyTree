@@ -157,6 +157,12 @@ providers from `.env` and saves documents via `store.ts`.
   written into the parent transaction's notes. Re-runs skip anything already
   tagged, so every importer must produce a stable `externalId`.
 - **Retailer data beats receipt photos** when both describe one purchase.
+- **Match per charge, not per order.** Amazon bills once per shipment, so one
+  order can explain several bank charges; matching must allow a purchase to
+  split across charges rather than assume one-to-one.
+- **Refunds and gift cards need explicit handling.** Refunds are positive
+  purchases that should match bank credits; the gift-card portion of an order
+  never reaches the bank, so splits must cover only the card-paid amount.
 - Reference implementation for matching heuristics (Amazon descriptor codes,
   ship-date vs order-date, Whole Foods): `../Accountable/Itteration 1/backend/accountable/merge/dedup.py`.
 - Prior art to check before writing a stub:
@@ -164,7 +170,9 @@ providers from `.env` and saves documents via `store.ts`.
   (Amazon to Actual splits via amazon-orders, proportional tax/discounts),
   [thehesiod/costco-mcp](https://github.com/thehesiod/costco-mcp) (itemized
   Costco receipts API), and [jbms/beancount-import](https://github.com/jbms/beancount-import)
-  (closest design for cross-source matching and dedup).
+  (closest design for cross-source matching and dedup: 5-day window, learns
+  from confirmations). Also maintained: amazon-orders, azad, Receipt
+  Wrangler, actual-ai.
 
 ## Code Style & Conventions
 
