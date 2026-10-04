@@ -159,6 +159,12 @@ providers from `.env` and saves documents via `store.ts`.
 - **Retailer data beats receipt photos** when both describe one purchase.
 - Reference implementation for matching heuristics (Amazon descriptor codes,
   ship-date vs order-date, Whole Foods): `../Accountable/Itteration 1/backend/accountable/merge/dedup.py`.
+- Prior art to check before writing a stub:
+  [taylorcjensen/actual-amazon](https://github.com/taylorcjensen/actual-amazon)
+  (Amazon to Actual splits via amazon-orders, proportional tax/discounts),
+  [thehesiod/costco-mcp](https://github.com/thehesiod/costco-mcp) (itemized
+  Costco receipts API), and [jbms/beancount-import](https://github.com/jbms/beancount-import)
+  (closest design for cross-source matching and dedup).
 
 ## Code Style & Conventions
 
