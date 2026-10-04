@@ -2,7 +2,7 @@ import { SOURCE_IDS } from '@moneytree/core';
 import type { SourceId } from '@moneytree/core';
 
 import { sourceLabel } from '../format.ts';
-import { routeHref } from '../route.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 type SourceTabsProps = {
   page: 'purchases' | 'review';
@@ -10,6 +10,7 @@ type SourceTabsProps = {
 };
 
 export function SourceTabs({ page, current }: SourceTabsProps) {
+  const { linkTo } = useMoneyTree();
   return (
     <div className="tabs" role="tablist" aria-label="Source">
       {SOURCE_IDS.map(source => (
@@ -17,7 +18,7 @@ export function SourceTabs({ page, current }: SourceTabsProps) {
           key={source}
           role="tab"
           aria-selected={source === current}
-          href={routeHref({ page, source })}
+          href={linkTo({ page, source })}
         >
           {sourceLabel(source)}
         </a>

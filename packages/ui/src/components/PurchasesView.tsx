@@ -1,23 +1,23 @@
 import type { SourceId } from '@moneytree/core';
 import { useQuery } from '@tanstack/react-query';
 
-import { api } from '../api.ts';
 import { sourceLabel } from '../format.ts';
-import { routeHref } from '../route.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 import { Money } from './Money.tsx';
 import { Notice } from './Notice.tsx';
 import { PurchaseRow } from './PurchaseRow.tsx';
 import { SourceTabs } from './SourceTabs.tsx';
 
-type PurchasesPageProps = {
+type PurchasesViewProps = {
   source: SourceId;
 };
 
-export function PurchasesPage({ source }: PurchasesPageProps) {
+export function PurchasesView({ source }: PurchasesViewProps) {
+  const { client, linkTo } = useMoneyTree();
   const purchases = useQuery({
     queryKey: ['purchases', source],
-    queryFn: () => api.purchases(source),
+    queryFn: () => client.purchases(source),
   });
   const total = purchases.data?.reduce((sum, p) => sum + p.total, 0) ?? 0;
   const itemCount =
@@ -45,7 +45,7 @@ export function PurchasesPage({ source }: PurchasesPageProps) {
       {purchases.data && purchases.data.length === 0 && (
         <div className="empty">
           <p>No {sourceLabel(source)} purchases yet.</p>
-          <a className="button" href={routeHref({ page: 'sources' })}>
+          <a className="button" href={linkTo({ page: 'sources' })}>
             Fetch {sourceLabel(source)} data
           </a>
         </div>

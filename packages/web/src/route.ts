@@ -1,14 +1,9 @@
 import { useSyncExternalStore } from 'react';
 
 import { isSourceId } from '@moneytree/core';
-import type { SourceId } from '@moneytree/core';
+import type { MoneyTreeRoute } from '@moneytree/ui';
 
-export type Route =
-  | { page: 'sources' }
-  | { page: 'purchases'; source: SourceId }
-  | { page: 'review'; source: SourceId };
-
-export function parseRoute(hash: string): Route {
+export function parseRoute(hash: string): MoneyTreeRoute {
   const [page, source = ''] = hash.replace(/^#\/?/, '').split('/');
   const validSource = isSourceId(source) ? source : 'costco';
   if (page === 'purchases') return { page, source: validSource };
@@ -16,7 +11,8 @@ export function parseRoute(hash: string): Route {
   return { page: 'sources' };
 }
 
-export function routeHref(route: Route): string {
+/** The standalone app's `linkTo`: hash URLs keep the server fallback trivial. */
+export function routeHref(route: MoneyTreeRoute): string {
   return route.page === 'sources'
     ? '#/sources'
     : `#/${route.page}/${route.source}`;
@@ -27,8 +23,7 @@ function subscribe(onChange: () => void) {
   return () => window.removeEventListener('hashchange', onChange);
 }
 
-/** Hash routing keeps the server's static fallback trivial. */
-export function useRoute(): Route {
+export function useRoute(): MoneyTreeRoute {
   const hash = useSyncExternalStore(subscribe, () => window.location.hash);
   return parseRoute(hash);
 }

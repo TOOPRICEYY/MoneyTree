@@ -3,8 +3,8 @@ import { useState } from 'react';
 import type { ReviewResult, SourceId } from '@moneytree/core';
 import { useMutation } from '@tanstack/react-query';
 
-import { api } from '../api.ts';
 import { sourceLabel } from '../format.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 import { MatchRow } from './MatchRow.tsx';
 import { Notice } from './Notice.tsx';
@@ -14,23 +14,24 @@ import { SourceTabs } from './SourceTabs.tsx';
 /** Matches at or above this score start out selected. */
 const AUTO_SELECT_SCORE = 0.6;
 
-type ReviewPageProps = {
+type ReviewViewProps = {
   source: SourceId;
 };
 
-export function ReviewPage({ source }: ReviewPageProps) {
+export function ReviewView({ source }: ReviewViewProps) {
   // Keyed by source so switching tabs starts a fresh review.
   return <Review key={source} source={source} />;
 }
 
-function Review({ source }: ReviewPageProps) {
+function Review({ source }: ReviewViewProps) {
+  const { client } = useMoneyTree();
   const [since, setSince] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isConfirming, setIsConfirming] = useState(false);
   const [written, setWritten] = useState<number | undefined>();
 
   const review = useMutation({
-    mutationFn: () => api.review(source, since || undefined),
+    mutationFn: () => client.review(source, since || undefined),
     onSuccess: (result: ReviewResult) => {
       setSelected(
         new Set(
@@ -43,7 +44,7 @@ function Review({ source }: ReviewPageProps) {
   });
 
   const apply = useMutation({
-    mutationFn: () => api.apply(source, [...selected], since || undefined),
+    mutationFn: () => client.apply(source, [...selected], since || undefined),
     onSuccess: result => {
       setWritten(result.written);
       setIsConfirming(false);

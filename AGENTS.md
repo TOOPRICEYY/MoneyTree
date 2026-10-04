@@ -79,7 +79,8 @@ fetchers (email | scrapers | aggregators | files)
    → importers (parse)  → core (dedup, match, split)  → actual-sync
 
 pipeline (orchestration) ← cli
-                         ← server (local HTTP API) ← web (React UI)
+                         ← server (local HTTP API) ← ui (views) ← web (standalone shell)
+                                                                ← Actual extension (planned)
 ```
 
 Fetchers only acquire data and importers only parse it, joined by the
@@ -160,16 +161,53 @@ takes the pipeline as an argument so routes are tested with fakes
 (`app.test.ts`). Fetches run as in-memory jobs (`jobs.ts`) that the UI polls.
 In production it also serves `packages/web/dist`.
 
-#### 10. **web** (`packages/web/` - `@moneytree/web`)
+#### 10. **ui** (`packages/ui/` - `@moneytree/ui`)
 
-React 19 + Vite UI, compiled with React Compiler exactly as Actual's
-desktop-client does (`vite.config.ts`). TanStack Query for server state, hash
-routing (`route.ts`), plain CSS with light/dark tokens (`styles.css`).
+The views, written to run in any host: the standalone app today, Actual
+later. React 19, compiled by the host's React Compiler setup (see
+`packages/web/vite.config.ts`, same as Actual's desktop-client).
 
-- Sources: per-source channel status, fetch buttons, Connect Gmail, activity panel with live job logs
-- Purchases: parsed purchases per source with line items and adjustments
-- Review: dry-run matches against Actual, select which to write, confirm, apply
-- API types come from `@moneytree/core`'s `api.ts`; the web package never imports Node packages
+- `MoneyTreeProvider` takes a `client` (`MoneyTreeClient`) and a `linkTo`
+  function, owns its own TanStack Query cache, and renders `.mt-root`
+- Views: `SourcesView`, `PurchasesView`, `ReviewView`, `ActivityPanel`
+  (`placement="floating" | "inline"`)
+- `createHttpClient(baseUrl)` talks to the MoneyTree server
+- `styles.css` is scoped under `.mt-root`; its `--mt-*` tokens resolve to
+  Actual's `--color-*` theme variables when present, with MoneyTree's own
+  palette as the fallback
+
+Rules that keep it embeddable:
+
+- No global CSS (no `:root`, `body`, or unscoped selectors) and no layout chrome
+- No `window.location`, routers or hrefs built by hand: links come from `linkTo`
+- No direct `fetch`: all data goes through the injected `MoneyTreeClient`
+- React is a peer dependency; never import Node packages
+- API types come from `@moneytree/core`'s `api.ts`
+
+#### 11. **web** (`packages/web/` - `@moneytree/web`)
+
+The standalone shell: sidebar, hash routing (`route.ts` is its `linkTo`),
+page chrome (`shell.css`), and `createHttpClient('/api')`. Built by Vite and
+served by the server under `yarn ui`.
+
+### Embedding in Actual (planned)
+
+Actual's client-side plugins are still behind the `flags.plugins`
+experimental flag ("soon"). Its plugin service worker serves plugin files as
+ES modules from `/plugin-data/<slug>/`. When the plugin API is public:
+
+1. Add `packages/actual-extension` that builds `@moneytree/ui` in Vite
+   library mode with `react`/`react-dom` external (Actual provides React).
+2. Mount the views inside Actual's pages and pass a `linkTo` that maps
+   `MoneyTreeRoute`s to Actual's router paths.
+3. Supply a `MoneyTreeClient` that does `review`/`apply` through Actual's
+   in-app API (no `@actual-app/api` sync round trip) and sends
+   `sources`/`purchases`/`fetch`/`jobs` to the local MoneyTree server, since
+   email and scraping need Node.
+4. Use `<ActivityPanel placement="inline" />` in Actual's layout.
+
+Nothing in `packages/ui` should need to change for this; if a change there is
+needed, it is a sign a host concern leaked into the views.
 
 ### Adding an importer
 

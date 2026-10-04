@@ -401,14 +401,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@moneytree/ui@workspace:*, @moneytree/ui@workspace:packages/ui":
+  version: 0.0.0-use.local
+  resolution: "@moneytree/ui@workspace:packages/ui"
+  dependencies:
+    "@moneytree/core": "workspace:*"
+    "@tanstack/react-query": "npm:^5.90.0"
+    "@types/react": "npm:^19.2.0"
+    "@types/react-dom": "npm:^19.2.0"
+    react: "npm:^19.2.0"
+    react-dom: "npm:^19.2.0"
+    vite: "npm:^8.3.2"
+    vitest: "npm:^5.0.3"
+  peerDependencies:
+    react: ^19.2.0
+    react-dom: ^19.2.0
+  languageName: unknown
+  linkType: soft
+
 "@moneytree/web@workspace:packages/web":
   version: 0.0.0-use.local
   resolution: "@moneytree/web@workspace:packages/web"
   dependencies:
     "@babel/core": "npm:^8.0.1"
     "@moneytree/core": "workspace:*"
+    "@moneytree/ui": "workspace:*"
     "@rolldown/plugin-babel": "npm:~0.2.3"
-    "@tanstack/react-query": "npm:^5.90.0"
     "@types/react": "npm:^19.2.0"
     "@types/react-dom": "npm:^19.2.0"
     "@vitejs/plugin-react": "npm:^6.0.3"

@@ -2,17 +2,21 @@ import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { api } from '../api.ts';
 import { todayMinusDays } from '../format.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 import { Notice } from './Notice.tsx';
 import { SourceCard } from './SourceCard.tsx';
 import { useStartJob } from './useStartJob.ts';
 
-export function SourcesPage() {
-  const sources = useQuery({ queryKey: ['sources'], queryFn: api.sources });
+export function SourcesView() {
+  const { client } = useMoneyTree();
+  const sources = useQuery({
+    queryKey: ['sources'],
+    queryFn: () => client.sources(),
+  });
   const [since, setSince] = useState(() => todayMinusDays(365));
-  const connectGmail = useStartJob(api.connectGmail);
+  const connectGmail = useStartJob(() => client.connectGmail());
 
   return (
     <section className="page">

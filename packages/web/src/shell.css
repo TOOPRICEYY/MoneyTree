@@ -1,0 +1,140 @@
+/* Standalone app shell: page chrome around the MoneyTree views. */
+
+:root {
+  --shell-bg: #f5f6f3;
+  --shell-sidebar: #12261d;
+  --shell-sidebar-text: #d7e6dd;
+  --shell-sidebar-muted: #8fa89a;
+  --shell-sidebar-active: #1f3a2d;
+
+  color-scheme: light;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shell-bg: #0f1311;
+    --shell-sidebar: #0b1410;
+    --shell-sidebar-active: #17291f;
+
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--shell-bg);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* The shell sits inside .mt-root, so override the views' link color. */
+.sidebar a {
+  color: inherit;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 12px;
+  background: var(--shell-sidebar);
+  color: var(--shell-sidebar-text);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  color: inherit;
+  font-size: 17px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar li a {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sidebar li a small {
+  color: var(--shell-sidebar-muted);
+  font-size: 12px;
+}
+
+.sidebar li a:hover,
+.sidebar li a[aria-current='page'] {
+  background: var(--shell-sidebar-active);
+}
+
+.sidebar li a[aria-current='page'] span {
+  font-weight: 600;
+}
+
+.sidebar-note {
+  margin: auto 8px 0;
+  color: var(--shell-sidebar-muted);
+  font-size: 12px;
+}
+
+.content {
+  min-width: 0;
+  padding: 28px 32px 120px;
+}
+
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    overflow-x: auto;
+  }
+
+  .sidebar ul {
+    flex-direction: row;
+  }
+
+  .sidebar li a small,
+  .sidebar-note,
+  .brand span {
+    display: none;
+  }
+
+  .content {
+    padding: 20px 16px 140px;
+  }
+}

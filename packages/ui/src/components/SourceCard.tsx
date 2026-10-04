@@ -5,9 +5,8 @@ import type {
   SourceInfo,
 } from '@moneytree/core';
 
-import { api } from '../api.ts';
 import { formatRelative, sourceLabel } from '../format.ts';
-import { routeHref } from '../route.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 import { Notice } from './Notice.tsx';
 import { useStartJob } from './useStartJob.ts';
@@ -25,9 +24,10 @@ type SourceCardProps = {
 };
 
 export function SourceCard({ info, since }: SourceCardProps) {
+  const { client, linkTo } = useMoneyTree();
   const startFetch = useStartJob(
     (args: { source: SourceId; via: FetchChannel }) =>
-      api.fetch(args.source, args.via, since),
+      client.fetch(args.source, args.via, since),
   );
   const canParseAny = info.channels.some(c => c.canParse);
 
@@ -82,10 +82,10 @@ export function SourceCard({ info, since }: SourceCardProps) {
 
       {canParseAny && (
         <footer className="card-footer">
-          <a href={routeHref({ page: 'purchases', source: info.source })}>
+          <a href={linkTo({ page: 'purchases', source: info.source })}>
             View purchases
           </a>
-          <a href={routeHref({ page: 'review', source: info.source })}>
+          <a href={linkTo({ page: 'review', source: info.source })}>
             Review matches
           </a>
         </footer>

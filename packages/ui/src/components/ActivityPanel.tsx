@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Job } from '@moneytree/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { api } from '../api.ts';
 import { formatRelative } from '../format.ts';
+import { useMoneyTree } from '../MoneyTreeProvider.tsx';
 
 function LogLine({ line }: { line: string }) {
   if (/^https?:\/\//.test(line)) {
@@ -51,12 +51,18 @@ function JobItem({ job }: { job: Job }) {
   );
 }
 
+type ActivityPanelProps = {
+  /** `floating` pins it bottom-right (standalone); `inline` flows in a host layout. */
+  placement?: 'floating' | 'inline';
+};
+
 /** Recent fetch and auth jobs; polls only while something is running. */
-export function JobsPanel() {
+export function ActivityPanel({ placement = 'floating' }: ActivityPanelProps) {
+  const { client } = useMoneyTree();
   const queryClient = useQueryClient();
   const jobs = useQuery({
     queryKey: ['jobs'],
-    queryFn: api.jobs,
+    queryFn: () => client.jobs(),
     refetchInterval: query =>
       query.state.data?.some(job => job.status === 'running') ? 1500 : false,
   });
@@ -81,7 +87,7 @@ export function JobsPanel() {
   if (recent.length === 0) return null;
 
   return (
-    <aside className="jobs" aria-label="Activity">
+    <aside className={`jobs jobs-${placement}`} aria-label="Activity">
       <h2>Activity</h2>
       <ul>
         {recent.map(job => (
